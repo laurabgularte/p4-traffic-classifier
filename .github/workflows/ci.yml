@@ -1,0 +1,33 @@
+name: P4 Code Validation & Build
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+
+jobs:
+  p4-compile-check:
+    name: Validate P4 Syntax and Build Artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Compilar código P4 via Container P4Dev
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/app \
+            -w /app \
+            p4lang/p4dev:latest \
+            p4c-bm2-ss --p4v 16 --p4runtime-files build/classifier.p4info.txt -o build/classifier.json p4src/classifier.p4
+
+      - name: Verificar se os artefatos compilados foram gerados
+        run: |
+          if [ -f "build/classifier.json" ] && [ -f "build/classifier.p4info.txt" ]; then
+            echo "✔ Compilação do P4 concluída com sucesso!"
+          else
+            echo "✖ Falha: Artefatos do P4 não foram encontrados."
+            exit 1
+          fi

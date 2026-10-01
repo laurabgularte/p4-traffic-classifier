@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  p4-env:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: p4_dev_env
+    # Necessário para o Mininet criar interfaces virtuais e manipular namespaces de rede
+    privileged: true
+    network_mode: host
+    pid: host
+    volumes:
+      - .:/app
+      - /lib/modules:/lib/modules:ro
+    tty: true
+    stdin_open: true
+    working_dir: /app
