@@ -38,12 +38,13 @@ header tcp_t {
     bit<16> urgPtr;
 }
 
-// In-band Network Telemetry (INT) Header
+// In-band Network Telemetry (INT) Header - Alinhado a 72 bits (9 bytes)
 header int_header_t {
-    bit<8>  switch_id;
-    bit<32> ingress_timestamp;
-    bit<19> egress_queue_depth;
-    bit<8>  flow_category; // 0 = Mouse Flow, 1 = Elephant Flow
+    bit<8>  switch_id;          // 8 bits
+    bit<32> ingress_timestamp;  // 32 bits
+    bit<19> egress_queue_depth; // 19 bits
+    bit<5>  padding;            // 5 bits de preenchimento para alinhamento
+    bit<8>  flow_category;      // 8 bits (0 = Mouse Flow, 1 = Elephant Flow)
 }
 
 struct headers {
