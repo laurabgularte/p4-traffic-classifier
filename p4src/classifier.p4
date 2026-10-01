@@ -7,34 +7,18 @@
 #define SKETCH_DEPTH 1024
 #define ELEPHANT_THRESHOLD 500000 // Limiar de 500KB acumulados
 
-control c_egress(inout headers hdr, inout metadata meta, inout standard_metadata_t std_meta) {
-    apply {
-        if (hdr.ipv4.isValid()) {
-            hdr.int_hdr.setValid();
-            hdr.int_hdr.switch_id = 1;
-            hdr.int_hdr.ingress_timestamp = (bit<32>)std_meta.ingress_global_timestamp;
-            hdr.int_hdr.egress_queue_depth = (bit<19>)std_meta.enq_qdepth;
-            hdr.int_hdr.padding = 0; // Inicialização do preenchimento
-            hdr.int_hdr.flow_category = (bit<8>)meta.is_heavy_hitter;
-        }
+control c_ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t std_meta) {
+
+    register<bit<32>>(SKETCH_DEPTH) sketch_bank_0;
+    register<bit<32>>(SKETCH_DEPTH) sketch_bank_1;
+
+    action drop_packet() {
+        mark_to_drop(std_meta);
     }
-}
 
     action ipv4_forward(bit<9> port) {
         std_meta.egress_spec = port;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
-    }
-
-    table t_forwarding {
-        key = {
-            hdr.ipv4.dstAddr: lpm;
-        }
-        actions = {
-            ipv4_forward;
-            drop_packet;
-        }
-        size = 512;
-        default_action = drop_packet();
     }
 
     action process_sketch() {
@@ -74,6 +58,18 @@ control c_egress(inout headers hdr, inout metadata meta, inout standard_metadata
         }
     }
 
+    table t_forwarding {
+        key = {
+            hdr.ipv4.dstAddr: lpm;
+        }
+        actions = {
+            ipv4_forward;
+            drop_packet;
+        }
+        size = 512;
+        default_action = drop_packet();
+    }
+
     apply {
         if (hdr.ipv4.isValid()) {
             if (hdr.tcp.isValid()) {
@@ -91,6 +87,7 @@ control c_egress(inout headers hdr, inout metadata meta, inout standard_metadata
             hdr.int_hdr.switch_id = 1;
             hdr.int_hdr.ingress_timestamp = (bit<32>)std_meta.ingress_global_timestamp;
             hdr.int_hdr.egress_queue_depth = (bit<19>)std_meta.enq_qdepth;
+            hdr.int_hdr.padding = 0; // Preenchimento de 5 bits definido em headers.p4
             hdr.int_hdr.flow_category = (bit<8>)meta.is_heavy_hitter;
         }
     }
